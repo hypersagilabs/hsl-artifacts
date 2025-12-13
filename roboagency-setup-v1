@@ -1,0 +1,472 @@
+Autonomous AI Agency — Build, Orchestrate & Scale (v1.0)
+
+A practical, implementation-ready documentation suite for standing up a highly-automated, agent-driven AI studio on a VPS stack—aligned with “Humachine” principles (human creativity + machine efficiency) and the 4-I model (Intentionality → Integration → Implementation → Indication).  ￼  ￼
+
+⸻
+
+Table of Contents
+	•	0. Intent & Scope
+	•	1. System Architecture (ARCHITECTURE.md)
+	•	2. Core Workflows & Diagrams (WORKFLOWS.md)
+	•	3. Agents & Orchestration (AGENTS.md)
+	•	4. Automations (AUTOMATIONS.md)
+	•	5. APIs & Contracts (API_DOCUMENTATION.md)
+	•	6. Data & Storage (DATA_MODEL.md)
+	•	7. Naming, Ports & Repo Structure (CONVENTIONS.md)
+	•	8. Deployment on VPS (DEPLOYMENT.md)
+	•	9. Security, Compliance & Runbooks (SECURITY_POLICY.md, RUNBOOK.md)
+	•	10. Roadmap, Costs & SLOs (ROADMAP.md)
+	•	Appendix: Sample Files (.env, Docker, Nginx, CI/CD)
+
+⸻
+
+0. Intent & Scope
+
+Mission. Build the most automated, intelligent, and creatively sovereign AI agency on Earth by pairing human judgment and brand voice with machine scale, speed, and consistency. This explicitly follows Kasparov’s Law (“weak human + machine + better process > strong computer alone”), harnesses Moravec’s Paradox (let machines do what humans aren’t great at and vice-versa), and aims for collective superintelligence via a network of humans + AI + bots.  ￼
+
+Operating model. Use the 4-I model to continuously improve: Intentionality (purpose, values) → Integration (humans + agents + services) → Implementation (experimentation, freedom to innovate) → Indication (OKRs & telemetry), then loop.  ￼  ￼
+
+⸻
+
+1. System Architecture (ARCHITECTURE.md)
+
+1.1 High-level view
+
+graph TD
+  subgraph Frontend (SvelteKit)
+    UI[Sector Picker & Intake Form]
+    Portal[Client Portal]
+  end
+  subgraph Backend (FastAPI)
+    Orchestrator[Agent Orchestrator (LangGraph/DSPy)]
+    API[REST/Webhook API]
+  end
+  subgraph Data
+    PG[(Supabase Postgres)]
+    Obj[(S3/Spaces for Assets)]
+    Vec[(Qdrant - embeddings)]
+    Cache[(Redis)]
+  end
+  subgraph Automations
+    n8n[n8n Flows]
+    Email[(Resend SMTP)]
+    CMS[(Content Source: MDX/Wagtail)]
+  end
+  subgraph Infra
+    Nginx[NGINX / API Gateway]
+    CF[Cloudflare WAF/SSL/DNS]
+    Mon[UptimeRobot, Sentry, Analytics]
+  end
+
+  UI -->|Form submit| Nginx --> API --> Orchestrator
+  Orchestrator --> PG
+  Orchestrator --> Vec
+  Orchestrator --> Obj
+  Orchestrator --> Cache
+  Orchestrator <-->|Triggers, Webhooks| n8n --> Email
+  CMS -->|Publish Webhook| n8n
+  Nginx --> CF
+  Mon --> Nginx
+
+Key platform choices (lean VPS, free/low-cost defaults):
+	•	SvelteKit frontend, FastAPI backend; Nginx as reverse proxy/API gateway.
+	•	Cloudflare for DNS/SSL/WAF; Resend for email (free tier noted).  ￼
+	•	Hetzner CX21–class VPS recommended; Dockerized services.  ￼
+	•	Prioritized order of operations: Docker → Domain+Cloudflare → Server → SSL → Email → Security → (Optional) Microservices → CI/CD → Monitoring.  ￼
+
+The above sequence (and the use of Cloudflare Origin certs + Resend setup) is directly aligned with your Quick Start and Deployment docs.  ￼  ￼
+
+1.2 Services
+	•	Frontend (SvelteKit): Sector picker, intake form, client portal, auth, status tracking.
+	•	Backend (FastAPI): AuthN/Z, API/queues, LangGraph/DSPy agent graphs, job state machine.
+	•	Automations (n8n): Webhook ingestion, DB writes, campaign email, calendar/scheduling, CMS distribution.
+	•	Data: Supabase (core relational), Qdrant (vectors), S3/Spaces (assets), Redis (jobs/cache).
+	•	Observability: Sentry + UptimeRobot + Cloudflare analytics.  ￼
+	•	Security: Cloudflare WAF/Bot, Nginx headers, fail2ban, backups as per roadmap.  ￼
+
+⸻
+
+2. Core Workflows & Diagrams (WORKFLOWS.md)
+
+2.1 Client “Sector → Intake → Warm Lead” (E2E)
+
+sequenceDiagram
+  participant U as User
+  participant FE as SvelteKit (Form)
+  participant GW as Nginx Gateway
+  participant BE as FastAPI
+  participant OR as Agent Orchestrator
+  participant DB as Supabase
+  participant N8 as n8n
+  participant RS as Resend (Email)
+  participant AS as Asset Store (S3/Spaces)
+
+  U->>FE: Select sector + submit idea + email
+  FE->>GW: POST /intake
+  GW->>BE: route
+  BE->>DB: Create Lead, Project, Intake
+  BE->>OR: enqueue pipeline(workflow_id="proto_v1")
+  OR->>OR: Generate product docs, wireframes, prototype
+  OR->>AS: Upload artifacts (docs, assets)
+  OR->>N8: webhook: lead_ready + asset URLs
+  N8->>RS: Email #1 demo video (with asset link)
+  N8->>RS: Email #2 prototype link
+  N8->>RS: Email #3 schedule consult (Calendly link)
+
+Outcome: Every lead arrives “warm + qualified” with demo + prototype + scheduled consult automatically.
+
+2.2 Content “Publish → Omnichannel Distribution”
+
+flowchart LR
+  CMS[(Blog Publish Webhook)] --> N8[n8n Flow]
+  N8 --> LLM[Summarize & style: X/TikTok/Reels/YT]
+  LLM --> Queue[/Scheduler/]
+  Queue --> TW[Twitter/X API]
+  Queue --> IG[IG Reels/TikTok Upload (via connector)]
+  Queue --> YT[YouTube Shorts/Video Upload]
+  Queue --> LI[LinkedIn Post]
+  N8 --> RS[Newsletter via Resend]
+
+
+⸻
+
+3. Agents & Orchestration (AGENTS.md)
+
+3.1 Agent graph (LangGraph/DSPy)
+	•	IntakeParser → validates sector & intent, extracts goals/constraints.
+	•	MarketMapper → retrieves patterns, comps, and risks (templated from library).
+	•	ProductDocWriter → PRD, user stories, acceptance criteria.
+	•	Wireframer → low-fi wireframes (textual layout, optional Figma API integration).
+	•	Prototyper → scaffolds Svelte component(s) from PRD and wireframe plan.
+	•	ExplainerProducer → 60–90s script + voiceover plan + scene list; renders via ffmpeg pipeline or external studio.
+	•	CampaignComposer → 3-email warmup sequence (links to demo, prototype, calendar).
+	•	QA/Indication → health checks, validation, scoring; logs to telemetry (OKRs).
+
+Process over horsepower: better process + human review points beats raw compute, per Kasparov’s Law. Embed purposeful guardrails (4-I).  ￼  ￼
+
+Skeleton (Python):
+
+# agents/orchestrator.py
+from langgraph.graph import StateGraph, END
+from dspy import ChainOfThought, Example
+
+def intake_parser(state): ...
+def product_doc_writer(state): ...
+def wireframer(state): ...
+def prototyper(state): ...
+def explainer_producer(state): ...
+def campaign_composer(state): ...
+def indication_okrs(state): ...
+
+g = StateGraph()
+g.add_node("intake", intake_parser)
+g.add_node("prd", product_doc_writer)
+g.add_node("wireframe", wireframer)
+g.add_node("prototype", prototyper)
+g.add_node("video", explainer_producer)
+g.add_node("campaign", campaign_composer)
+g.add_node("indication", indication_okrs)
+
+g.set_entry_point("intake")
+g.add_edge("intake", "prd")
+g.add_edge("prd", "wireframe")
+g.add_edge("wireframe", "prototype")
+g.add_edge("prototype", "video")
+g.add_edge("video", "campaign")
+g.add_edge("campaign", "indication")
+g.add_edge("indication", END)
+workflow = g.compile()
+
+
+⸻
+
+4. Automations (AUTOMATIONS.md)
+
+4.1 n8n — Lead Warmup (importable JSON, trimmed)
+
+{
+  "nodes": [
+    {"parameters": {"path": "lead/intake"}, "name": "Webhook", "type": "n8n-nodes-base.webhook"},
+    {"parameters": {"functionCode": "return [{json: {lead: $json}}]"}, "name": "Extract"},
+    {"parameters": {"operation": "insert", "table": "leads"}, "name": "Supabase"},
+    {"parameters": {"method": "POST", "url": "https://api.agency.local/workflows/proto_v1"}, "name": "Trigger Orchestrator"},
+    {"parameters": {"interval": 5, "unit": "minutes"}, "name": "WaitForArtifacts"},
+    {"parameters": {"fromEmail": "hello@agency.com", "subject": "Your Demo", "text": "Link: {{$json.demo_url}}"}, "name": "Email #1 (Resend)"},
+    {"parameters": {"fromEmail": "hello@agency.com", "subject": "Prototype", "text": "Play: {{$json.proto_url}}"}, "name": "Email #2 (Resend)"},
+    {"parameters": {"fromEmail": "hello@agency.com", "subject": "Book a Call", "text": "Pick a slot: https://cal.com/you"}, "name": "Email #3 (Resend)"}
+  ],
+  "connections": { "Webhook": {"main":[ [{"node":"Extract"}] ]} }
+}
+
+Use Resend SMTP/API and set SPF/DKIM/DMARC in Cloudflare for deliverability.  ￼  ￼  ￼
+
+4.2 n8n — Content Distribution (trimmed)
+	•	Trigger: POST /cms/published
+	•	Steps: Summarize → Formatters (X/TikTok/IG/LI/YT) → Queue → API posts → Newsletter (Resend).
+
+⸻
+
+5. APIs & Contracts (API_DOCUMENTATION.md)
+
+Base URL: https://api.yourdomain.tld/v1
+	•	POST /intake
+	•	Body: { sector, idea, email, constraints? }
+	•	201: { lead_id, project_id }
+	•	POST /workflows/{id}
+	•	Body: { lead_id, options? } → returns { run_id, status }
+	•	GET /runs/{run_id} → { status, artifacts:[...] }
+	•	POST /webhooks/agent/{event} (internal from Orchestrator)
+	•	GET /assets/{id} (signed URLs)
+
+Webhooks to n8n:
+	•	lead_ready, artifacts_ready, failover_required
+
+⸻
+
+6. Data & Storage (DATA_MODEL.md)
+
+Core tables (Supabase/Postgres)
+
+-- leads, projects, workflows, runs, assets, campaigns
+CREATE TABLE leads(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text NOT NULL, sector text, idea text, created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE projects(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id uuid REFERENCES leads(id), status text, created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE workflow_runs(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid REFERENCES projects(id),
+  name text, status text, metadata jsonb, created_at timestamptz DEFAULT now()
+);
+
+Vectors (Qdrant): store doc chunks, code embeddings, captions for retrieval-augmented generation.
+
+Assets: object storage buckets: docs/, videos/, prototypes/.
+
+⸻
+
+7. Naming, Ports & Repo Structure (CONVENTIONS.md)
+
+Naming conventions
+	•	Services: frontend_service, orchestrator_service, automation_service, auth_service
+	•	Branches: feat/*, fix/*, chore/*, docs/*
+	•	Env files: .env, .env.local, .env.production (never commit secrets)
+
+Ports (aligns with your scheme)
+	•	3000–3999 frontends (e.g., frontend → 3000)
+	•	5000–5999 backends/APIs (e.g., api → 5001, orchestrator → 5002)
+	•	6000–6999 databases (local dev only)
+	•	8000–8999 internal web APIs/webhooks
+
+Monorepo layout
+
+/apps
+  /frontend_service      # SvelteKit
+  /orchestrator_service  # FastAPI + LangGraph/DSPy
+  /automation_service    # n8n (dockerized)
+  /auth_service          # optional
+/packages
+  /shared                # schemas, DTOs, UI tokens
+/infra
+  docker-compose.yml
+  nginx/
+    default.conf
+    ssl/
+/docs
+  ARCHITECTURE.md
+  WORKFLOWS.md
+  ...
+
+
+⸻
+
+8. Deployment on VPS (DEPLOYMENT.md)
+
+Do things in this order (fast path): Dockerize → Domain & Cloudflare → Server → SSL → Email → Security → (Opt) Microservices → CI/CD → Monitoring.  ￼  ￼
+
+Server: Ubuntu 22.04 LTS; 2–4GB RAM; 40GB storage; closest region; Docker, UFW, fail2ban.  ￼  ￼  ￼
+
+SSL: Cloudflare Origin cert in nginx/ssl/ + “Full (strict)”.  ￼
+
+Email: Resend SMTP with SPF/DKIM/DMARC DNS records (examples below).  ￼  ￼
+
+CI/CD & Monitoring: GitHub Actions → auto-build/push; UptimeRobot + Sentry + Cloudflare analytics.  ￼  ￼
+
+⸻
+
+9. Security, Compliance & Runbooks (SECURITY_POLICY.md, RUNBOOK.md)
+	•	Cloudflare WAF, rate limits, bot fight; Nginx security headers; fail2ban; regular audits; backups; incident response.  ￼  ￼
+	•	Email Auth: SPF/DKIM/DMARC records as per roadmap block.  ￼
+	•	Runbooks: Deployment/Incident/Maintenance/Backup—outlined in the roadmap.  ￼
+
+⸻
+
+10. Roadmap, Costs & SLOs (ROADMAP.md)
+	•	Success metrics & SLOs: HTTPS up, A-grade SSL, 99.9% uptime, MTTR < 15m, WAF active, CI/CD < 5m.  ￼  ￼
+	•	Cost envelope (minimum vs recommended) and quick wins.  ￼  ￼  ￼
+
+Docs index & status—you already earmarked these files to exist (ARCHITECTURE, RUNBOOK, API, SECURITY, etc.). This suite fills those in.  ￼  ￼
+
+⸻
+
+Appendix: Implementation Snippets
+
+A. .env.example
+
+# App
+NODE_ENV=production
+PUBLIC_BASE_URL=https://yourdomain.tld
+
+# FastAPI
+API_PORT=5001
+SECRET_KEY=change_me
+
+# Supabase
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_KEY=...
+
+# Resend SMTP
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=587
+SMTP_USER=resend
+SMTP_PASS=...
+SMTP_FROM=hello@yourdomain.tld
+
+Copy into .env.production on the server; don’t commit secrets.  ￼
+
+B. docker-compose.yml (prod skeleton)
+
+version: "3.9"
+services:
+  frontend:
+    build: ./apps/frontend_service
+    restart: unless-stopped
+    environment:
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+    ports: ["3000:3000"]
+
+  api:
+    build: ./apps/orchestrator_service
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+    ports: ["5001:5001"]
+    depends_on: [redis, qdrant, postgres]
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports: ["8080:5678"]
+    volumes: ["./data/n8n:/home/node/.n8n"]
+
+  nginx:
+    image: nginx:stable
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/nginx/ssl:/etc/nginx/ssl:ro
+    ports: ["80:80","443:443"]
+    depends_on: [frontend, api]
+
+  redis:
+    image: redis:7
+  qdrant:
+    image: qdrant/qdrant:latest
+  postgres:
+    image: supabase/postgres:15
+
+C. infra/nginx/default.conf (TLS via Cloudflare Origin)
+
+server {
+  listen 443 ssl http2;
+  server_name yourdomain.tld;
+
+  ssl_certificate     /etc/nginx/ssl/origin.crt;
+  ssl_certificate_key /etc/nginx/ssl/origin.key;
+
+  add_header Content-Security-Policy "default-src 'self' https: data: blob:;" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+
+  location /api/ {
+    proxy_pass http://api:5001/;
+  }
+  location / {
+    proxy_pass http://frontend:3000/;
+  }
+}
+
+Use “Full (strict)” in Cloudflare after placing origin certs.  ￼
+
+D. GitHub Actions (CI/CD)
+
+name: deploy
+on:
+  push:
+    branches: [main]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: docker build -t agency-frontend ./apps/frontend_service
+      - run: docker build -t agency-api ./apps/orchestrator_service
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: deploy
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/agency && git pull
+            docker compose up -d --build
+
+CI/CD appears in your Quick Start phases; monitoring follows.  ￼  ￼
+
+E. Resend + DNS (Cloudflare)
+
+# .env.production (already shown)
+SMTP_HOST=smtp.resend.com
+# Cloudflare DNS (examples)
+TXT @ "v=spf1 include:_spf.mx.cloudflare.net include:_spf.resend.com ~all"
+TXT resend._domainkey "v=DKIM1; k=rsa; p=..."
+TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.tld; pct=100; adkim=s; aspf=s"
+
+Mirrors your deployment roadmap blocks.  ￼
+
+⸻
+
+Bonus: SvelteKit Intake → Webhook
+
+// apps/frontend_service/src/routes/intake/+page.server.ts
+export const actions = {
+  default: async ({ request, fetch }) => {
+    const data = Object.fromEntries(await request.formData());
+    const res = await fetch("/api/intake", { method: "POST", body: JSON.stringify(data) });
+    return { ok: res.ok };
+  }
+};
+
+
+⸻
+
+How this aligns with “The Humachine”
+	•	Intentionality: clear mission + values baked into agent prompts & OKRs.  ￼
+	•	Integration: cross-functional teams of humans + agents + services (flat, flexible).  ￼
+	•	Implementation: freedom to iterate, ship, and learn (CI/CD + runbooks).  ￼
+	•	Indication: metrics & telemetry close the loop (SLOs + dashboards).  ￼
+
+⸻
+
+Next Steps (immediately actionable)
+	1.	Follow Quick Start order to get a live HTTPS site + working contact/email this week.  ￼
+	2.	Import n8n flows above (lead warmup + content distribution).
+	3.	Spin up orchestrator with the provided LangGraph/DSPy skeleton and stub agents.
+	4.	Add monitoring (UptimeRobot, Sentry) and Cloudflare WAF/rate limits.  ￼  ￼
+	5.	Iterate: capture OKRs and feed “Indication” back into prompts & routing.
+
