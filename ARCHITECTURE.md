@@ -309,20 +309,73 @@ automations.{$DOMAIN} {
 
 #### 5.3 Monitoring & Observability
 
-**Prometheus + Grafana:**
-- **Prometheus** - Metrics collection and storage
-  - Scrapes Caddy metrics from internal admin port (2019)
-  - Scrapes application metrics from health endpoints
-  - Internal network only (not exposed publicly)
-  
-- **Grafana** - Visualization and dashboards
-  - Accesses Prometheus via internal network
-  - Optional public access via `grafana.yourdomain.tld` (behind auth)
-  - Pre-configured Caddy dashboards
+**Deployment:** Separate Docker Compose file (`docker-compose.monitoring.yml`)
+
+**Prometheus Configuration:**
+- Scrapes Caddy metrics on internal port 2019
+- 15-second scrape interval
+- Stores time-series data locally
+- NOT exposed to public internet
+- Configuration: `infra/monitoring/prometheus/prometheus.yml`
+
+**Grafana Configuration:**
+- Pre-provisioned Prometheus datasource
+- Caddy dashboard included
+- Admin access via environment variables
+- Development: `localhost:3001`
+- Production: `grafana.{domain}` (through Caddy with auth)
+- Configuration: `infra/monitoring/grafana/provisioning/`
+
+**Network:** `observability` network (shared with Caddy)
+
+**Metrics Available:**
+- HTTP request rates
+- Response times
+- Status code distribution
+- Active connections
+- Certificate expiry warnings
+- Upstream health checks
 
 **Additional Tools:**
 - **Sentry** - Error tracking and performance monitoring
 - **UptimeRobot** - External uptime monitoring (1-min checks)
+
+#### 5.4 Tilt Orchestration
+
+**Purpose:** Development workflow orchestration and service management.
+
+**Features:**
+- Multi-compose file management (core + monitoring)
+- Label-based service organization
+- Resource dependency management
+- Live update capabilities for development
+- Composable architecture for future services
+
+**Tiltfile Structure:**
+- Core services: frontend, caddy
+- Observability: prometheus, grafana
+- Future services: orchestrator, workers, redis, qdrant, n8n
+
+**Usage:**
+```bash
+# Start all services
+tilt up
+
+# Start specific labels only
+tilt up -- --labels=core
+
+# View dashboard
+tilt up  # Opens browser automatically at http://localhost:10350
+```
+
+**Benefits:**
+- Single command to start entire stack
+- Visual dashboard for service status
+- Integrated log viewing
+- Automatic rebuilds on code changes
+- Better development experience than raw docker-compose
+
+**Reference:** [Tilt Documentation](https://docs.tilt.dev/)
 
 ---
 
@@ -355,6 +408,7 @@ automations.{$DOMAIN} {
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | Docker | 24+ | Containerization |
+| Tilt | Latest | Development orchestration |
 | Docker Compose | 2.x | Orchestration |
 | Caddy | 2.x | Edge gateway / Reverse proxy |
 | Ubuntu | 22.04 LTS | OS |

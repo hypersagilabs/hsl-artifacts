@@ -140,6 +140,43 @@ GRAFANA_ADMIN_PASSWORD=
 - [ ] API routes functional
 - [ ] Hot reload in development mode
 
+#### 1.6 Set Up Tilt Orchestration
+**Priority:** HIGH  
+**Time:** 1-2 hours
+
+**Purpose:** Install and configure Tilt for development workflow automation.
+
+**Installation:**
+
+```bash
+# macOS
+brew install tilt-dev/tap/tilt
+
+# Linux
+curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
+
+# Verify installation
+tilt version
+```
+
+**Configuration:**
+
+1. Create `Tiltfile` in project root
+2. Configure resource labels (core, infrastructure, observability)
+3. Set up resource dependencies
+4. Test with `tilt up`
+
+**Deliverables:**
+- `Tiltfile` with all services defined
+- Working Tilt dashboard
+- Documentation for team on Tilt usage
+
+**Benefits:**
+- Single command to start all services
+- Visual dashboard for service status
+- Automatic rebuilds on code changes
+- Better development experience than raw docker-compose
+
 ---
 
 ## Phase 2: Domain & DNS Setup (Week 1-2)
@@ -861,18 +898,34 @@ automations.{$DOMAIN} {
 ## Phase 8: Observability (Prometheus + Grafana) (Week 4)
 
 ### Objectives
-- Set up Prometheus for metrics collection
-- Configure Grafana for visualization
-- Scrape Caddy metrics (internal network only)
-- Set up application health monitoring
+- Deploy Prometheus + Grafana monitoring
+- Configure Caddy metrics scraping
+- Set up initial dashboards
+- Establish alerting foundation
 
 ### Tasks
 
-#### 8.1 Prometheus Setup
+#### 8.1 Deploy Monitoring Stack
 **Priority:** HIGH  
 **Time:** 2-3 hours
 
-**Create docker-compose.monitoring.yml:**
+**Steps:**
+1. Create `docker-compose.monitoring.yml`
+2. Configure Prometheus to scrape Caddy
+3. Set up Grafana datasource provisioning
+4. Deploy with Tilt: `tilt up`
+
+**Configuration files:**
+- `infra/monitoring/prometheus/prometheus.yml`
+- `infra/monitoring/grafana/provisioning/datasources/prometheus.yml`
+- `infra/monitoring/grafana/provisioning/dashboards/dashboard-provider.yml`
+
+**Verification:**
+- Access Grafana at `http://localhost:3001`
+- Verify Prometheus datasource connected
+- Check Caddy metrics flowing
+
+**Example docker-compose.monitoring.yml:**
 ```yaml
 services:
   prometheus:
@@ -895,6 +948,7 @@ services:
       - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards
       - grafana_data:/var/lib/grafana
+    ports: ["3001:3000"]
     networks: [observability]
     restart: unless-stopped
     depends_on: [prometheus]
@@ -913,7 +967,23 @@ volumes:
 - `infra/monitoring/prometheus/prometheus.yml`
 - Prometheus data volume
 
-#### 8.2 Prometheus Configuration
+#### 8.2 Configure Dashboards
+**Priority:** MEDIUM  
+**Time:** 1-2 hours
+
+**Dashboards to create:**
+- Caddy HTTP metrics (requests, response times, status codes)
+- Certificate expiry tracking
+- Upstream health monitoring
+
+**Sources:**
+- Import from Grafana community: https://grafana.com/grafana/dashboards/
+- Customize for specific needs
+- Save to `infra/monitoring/grafana/dashboards/`
+
+**Note:** A basic Caddy dashboard is included in the project setup.
+
+#### 8.3 Prometheus Configuration (Reference)
 **Priority:** HIGH  
 **Time:** 1-2 hours
 

@@ -4,6 +4,29 @@
 
 ---
 
+## Prerequisites
+
+**Required:**
+- [x] Node.js 20+
+- [x] Docker Desktop (or Docker Engine + Compose)
+- [x] **Tilt** (for orchestration)
+- [x] Domain name (for production)
+- [x] Email service credentials
+
+**Tilt Installation:**
+```bash
+# macOS
+brew install tilt-dev/tap/tilt
+
+# Linux
+curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash
+
+# Verify installation
+tilt version
+```
+
+---
+
 ## The Right Order to Do Things
 
 ### 🎯 Phase 1: Get Docker Working (Week 1, Days 1-2)
@@ -14,7 +37,38 @@
 # This is your first priority
 1. Create Dockerfile
 2. Create docker-compose.yml
-3. Test locally: docker compose up
+3. Create Tiltfile
+4. Test locally: tilt up
+```
+
+**Development Workflow:**
+
+**Start all services:**
+```bash
+cd hsl-website
+tilt up
+```
+
+This will:
+- Build and start frontend container
+- Start Caddy edge gateway
+- Start Prometheus + Grafana monitoring
+- Open Tilt dashboard in browser
+
+**Access points:**
+- Frontend: `http://localhost` (via Caddy) or `http://localhost:3000` (direct)
+- Tilt Dashboard: `http://localhost:10350`
+- Grafana: `http://localhost:3001`
+- Prometheus: Internal only
+
+**Stop services:**
+```bash
+tilt down
+```
+
+**Alternative (without Tilt):**
+```bash
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 ```
 
 **Done when:** You can access your site at `http://localhost` via Docker
@@ -224,23 +278,26 @@ Everything else can be added incrementally.
 
 Day 1 (Today):
 - [ ] Read full roadmap (artifacts/DEPLOYMENT_ROADMAP.md)
+- [ ] Install Tilt
 - [ ] Create Dockerfile
 - [ ] Create docker-compose.yml
-- [ ] Test Docker locally
+- [ ] Create Tiltfile
+- [ ] Test Docker locally with `tilt up`
 - [ ] Start domain registration
 - [ ] Choose DNS provider (any provider works)
 
 Day 2:
 - [ ] Finish Docker configuration
 - [ ] Set up Caddyfile
-- [ ] Test full stack locally
+- [ ] Set up monitoring (Prometheus + Grafana)
+- [ ] Test full stack locally with Tilt
 - [ ] Research server providers
 - [ ] Sign up for Resend (email)
 
 By end of Week 1:
 - [ ] Site live on your domain with HTTPS
 - [ ] Contact form working
-- [ ] Basic monitoring set up
+- [ ] Monitoring dashboards accessible (Grafana)
 
 ---
 

@@ -443,6 +443,66 @@ Fixes #123
 
 ---
 
+## Tilt Conventions
+
+### Resource Labels
+
+Organize services using labels for better visualization and selective startup:
+
+| Label | Purpose | Services |
+|-------|---------|----------|
+| `core` | Primary application services | frontend, orchestrator, workers |
+| `infrastructure` | Edge and gateway services | caddy |
+| `data` | Data storage services | redis, qdrant, postgres |
+| `automation` | Workflow automation | n8n |
+| `observability` | Monitoring and logging | prometheus, grafana |
+
+**Usage:**
+
+```bash
+# Start only core services
+tilt up -- --labels=core
+
+# Start core + infrastructure
+tilt up -- --labels=core,infrastructure
+
+# Start everything
+tilt up
+```
+
+### Resource Dependencies
+
+Define dependencies to ensure proper startup order:
+
+```python
+dc_resource('frontend', 
+    resource_deps=['caddy'])
+
+dc_resource('orchestrator', 
+    resource_deps=['redis', 'qdrant'])
+
+dc_resource('grafana', 
+    resource_deps=['prometheus'])
+```
+
+### Development Workflow
+
+1. **Start services:** `tilt up`
+2. **View dashboard:** Opens automatically at `http://localhost:10350`
+3. **Make code changes:** Tilt auto-rebuilds on file changes
+4. **View logs:** Click service in Tilt dashboard
+5. **Stop services:** `Ctrl+C` or `tilt down`
+
+### Best Practices
+
+- **Always use Tilt in development** for consistent experience
+- **Keep Tiltfile simple** - complex logic goes in shell scripts
+- **Document resource dependencies** in comments
+- **Use labels** to group related services
+- **Test with `tilt ci`** before committing (runs headless)
+
+---
+
 ## Environment Variables
 
 ### File Structure
