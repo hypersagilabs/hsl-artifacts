@@ -2,6 +2,24 @@
 
 **TL;DR Version of the Deployment Roadmap**
 
+**Version:** 2.0  
+**Last Updated:** 2025-12-14
+
+---
+
+## Changelog
+
+### Version 2.0 (2025-12-14)
+- Updated all file locations to reflect reorganized structure
+- Changed checklist items from "Create" to "Review" for already-implemented files
+- Updated Docker commands to use `infra/docker/compose.yml` paths
+- Updated Tiltfile references and usage instructions
+- Fixed artifact folder path from `artifacts/` to `hsl-artifacts/`
+- Added checkmarks (✅) to completed infrastructure items
+
+### Version 1.0 (2025-10-04)
+- Initial quick start guide
+
 ---
 
 ## Prerequisites
@@ -35,9 +53,9 @@ tilt version
 
 ```bash
 # This is your first priority
-1. Create Dockerfile
-2. Create docker-compose.yml
-3. Create Tiltfile
+1. ✅ Dockerfile in apps/frontend/
+2. ✅ Compose files in infra/docker/
+3. ✅ Tiltfile at project root
 4. Test locally: tilt up
 ```
 
@@ -68,7 +86,7 @@ tilt down
 
 **Alternative (without Tilt):**
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+docker compose -f infra/docker/compose.yml -f infra/docker/compose.monitoring.yml up -d
 ```
 
 **Done when:** You can access your site at `http://localhost` via Docker
@@ -277,11 +295,11 @@ Everything else can be added incrementally.
 ## Your First Day Checklist
 
 Day 1 (Today):
-- [ ] Read full roadmap (artifacts/DEPLOYMENT_ROADMAP.md)
+- [ ] Read full roadmap (hsl-artifacts/DEPLOYMENT_ROADMAP.md)
 - [ ] Install Tilt
-- [ ] Create Dockerfile
-- [ ] Create docker-compose.yml
-- [ ] Create Tiltfile
+- [x] Review Dockerfile in apps/frontend/
+- [x] Review compose files in infra/docker/
+- [x] Review Tiltfile at root
 - [ ] Test Docker locally with `tilt up`
 - [ ] Start domain registration
 - [ ] Choose DNS provider (any provider works)

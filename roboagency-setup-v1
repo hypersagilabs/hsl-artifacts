@@ -253,7 +253,8 @@ Assets: object storage buckets: docs/, videos/, prototypes/.
 7. Naming, Ports & Repo Structure (CONVENTIONS.md)
 
 Naming conventions
-	•	Services: frontend_service, orchestrator_service, automation_service, auth_service
+	•	Services: frontend, orchestrator, n8n, auth (service names in compose)
+	•	Apps: frontend/, orchestrator/, n8n/, auth/ (folder names in apps/)
 	•	Branches: feat/*, fix/*, chore/*, docs/*
 	•	Env files: .env, .env.local, .env.production (never commit secrets)
 
@@ -266,10 +267,10 @@ Ports (aligns with your scheme)
 Monorepo layout
 
 /apps
-  /frontend_service      # SvelteKit
-  /orchestrator_service  # FastAPI + LangGraph/DSPy
-  /automation_service    # n8n (dockerized)
-  /auth_service          # optional
+  /frontend             # SvelteKit (✅ implemented)
+  /orchestrator         # FastAPI + LangGraph/DSPy (📋 planned)
+  /n8n                  # n8n (dockerized) (📋 planned)
+  /auth                 # optional (📋 planned)
 /packages
   /shared                # schemas, DTOs, UI tokens
 /infra
@@ -345,7 +346,7 @@ B. docker-compose.yml (prod skeleton)
 version: "3.9"
 services:
   frontend:
-    build: ./apps/frontend_service
+    build: ./apps/frontend
     restart: unless-stopped
     environment:
       - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
@@ -414,8 +415,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - run: docker build -t agency-frontend ./apps/frontend_service
-      - run: docker build -t agency-api ./apps/orchestrator_service
+      - run: docker build -t agency-frontend ./apps/frontend
+      - run: docker build -t agency-api ./apps/orchestrator
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -443,7 +444,7 @@ Mirrors your deployment roadmap blocks.  ￼
 
 Bonus: SvelteKit Intake → Webhook
 
-// apps/frontend_service/src/routes/intake/+page.server.ts
+// apps/frontend/src/routes/intake/+page.server.ts
 export const actions = {
   default: async ({ request, fetch }) => {
     const data = Object.fromEntries(await request.formData());

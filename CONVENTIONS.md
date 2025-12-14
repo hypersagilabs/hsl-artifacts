@@ -1,8 +1,23 @@
 # Naming Conventions, Ports & Repository Structure
 
-**Version:** 1.0  
-**Last Updated:** 2025-10-04  
+**Version:** 2.0  
+**Last Updated:** 2025-12-14  
 **Project:** RoboAgency - Humachine AI Studio
+
+---
+
+## Changelog
+
+### Version 2.0 (2025-12-14)
+- Updated service naming from `frontend_service` to `frontend` (actual implementation)
+- Updated folder structure from `apps/frontend_service/` to `apps/frontend/`
+- Added infra/docker/ structure with compose files
+- Updated compose file reference from root to `infra/docker/compose.yml`
+- Added status indicators (✅ implemented, 📋 planned) to folder structure
+- Updated Docker container naming conventions
+
+### Version 1.0 (2025-10-04)
+- Initial conventions documentation
 
 ---
 
@@ -33,18 +48,18 @@ This document establishes naming conventions, port assignments, directory struct
 
 | Service | Name | Description |
 |---------|------|-------------|
-| Frontend | `frontend_service` | SvelteKit web application |
-| Backend API | `orchestrator_service` | FastAPI + LangGraph orchestrator |
-| Automation | `automation_service` | n8n workflows |
-| Auth | `auth_service` | Authentication service (optional) |
+| Frontend | `frontend` | SvelteKit web application (container: frontend) |
+| Backend API | `orchestrator` | FastAPI + LangGraph orchestrator |
+| Automation | `n8n` | n8n workflows |
+| Auth | `auth` | Authentication service (optional) |
 
 **Docker Container Names:**
 
 ```yaml
-# docker-compose.yml
+# infra/docker/compose.yml
 services:
-  frontend:       # Not frontend_service in compose
-    container_name: roboagency_frontend
+  frontend:       # Service name in compose
+    container_name: frontend
   
   api:
     container_name: roboagency_api
@@ -189,7 +204,7 @@ All services are behind Caddy and accessed via host-based routing:
 ```
 roboagency/
 ├── apps/
-│   ├── frontend_service/          # SvelteKit app
+│   ├── frontend/                  # SvelteKit app (✅ implemented)
 │   │   ├── src/
 │   │   │   ├── routes/
 │   │   │   ├── lib/
@@ -198,7 +213,7 @@ roboagency/
 │   │   ├── Dockerfile
 │   │   └── package.json
 │   │
-│   ├── orchestrator_service/      # FastAPI + LangGraph
+│   ├── orchestrator/              # FastAPI + LangGraph (📋 planned)
 │   │   ├── agents/
 │   │   │   ├── orchestrator.py
 │   │   │   ├── intake_parser.py
@@ -228,9 +243,15 @@ roboagency/
 │   └── ui/                         # Shared UI components
 │
 ├── infra/                          # Infrastructure config
-│   ├── docker-compose.yml
-│   ├── docker-compose.dev.yml
-│   ├── docker-compose.prod.yml
+│   ├── docker/                     # Docker compose files (✅ implemented)
+│   │   ├── compose.yml
+│   │   ├── compose.dev.yml
+│   │   └── compose.monitoring.yml
+│   ├── caddy/                      # Caddy config (✅ implemented)
+│   │   └── Caddyfile
+│   └── monitoring/                 # Monitoring config (✅ implemented)
+│       ├── prometheus/
+│       └── grafana/
 │   ├── caddy/
 │   │   └── Caddyfile
 │   ├── monitoring/

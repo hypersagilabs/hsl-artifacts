@@ -1,8 +1,19 @@
 # Core Workflows & Processes
 
-**Version:** 1.0  
-**Last Updated:** 2025-10-04  
+**Version:** 2.0  
+**Last Updated:** 2025-12-14  
 **Project:** RoboAgency - Humachine AI Studio
+
+---
+
+## Changelog
+
+### Version 2.0 (2025-12-14)
+- Updated file path from `apps/frontend_service/` to `apps/frontend/`
+- Fixed intake form route path in code example
+
+### Version 1.0 (2025-10-04)
+- Initial workflows documentation
 
 ---
 
@@ -64,7 +75,7 @@ sequenceDiagram
 **System:** SvelteKit Frontend
 
 ```typescript
-// apps/frontend_service/src/routes/intake/+page.server.ts
+// apps/frontend/src/routes/intake/+page.server.ts
 export const actions = {
   default: async ({ request, fetch }) => {
     const data = Object.fromEntries(await request.formData());

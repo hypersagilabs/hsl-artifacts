@@ -1,8 +1,25 @@
 # HyperSagi Labs Deployment Roadmap
 
-**Version:** 1.0  
-**Last Updated:** 2025-10-04  
+**Version:** 2.0  
+**Last Updated:** 2025-12-14  
 **Project:** hsl-website
+
+---
+
+## Changelog
+
+### Version 2.0 (2025-12-14)
+- Updated all file paths to match reorganized folder structure
+- Changed Dockerfile location from project root to `apps/frontend/`
+- Updated all compose file references to `infra/docker/compose.yml`, `compose.dev.yml`, `compose.monitoring.yml`
+- Updated Tiltfile documentation to reflect implemented state
+- Fixed deployment commands to use new compose file paths
+- Updated microservices directory structure examples
+- Updated volume mount paths for Caddy and monitoring services
+- Added checkmarks (✅) to completed infrastructure components
+
+### Version 1.0 (2025-10-04)
+- Initial deployment roadmap
 
 ---
 
@@ -58,8 +75,8 @@ This roadmap outlines the complete deployment strategy for the HyperSagi Labs we
 ```
 
 **Deliverables:**
-- `Dockerfile` in project root
-- `.dockerignore` file
+- `Dockerfile` in `apps/frontend/`
+- `.dockerignore` file (optional)
 - Build verification script
 
 #### 1.2 Set Up Docker Compose
@@ -72,9 +89,9 @@ This roadmap outlines the complete deployment strategy for the HyperSagi Labs we
 - `postgres` (optional) - Database if needed later
 
 **Deliverables:**
-- `docker-compose.yml`
-- `docker-compose.dev.yml` (development overrides)
-- `docker-compose.prod.yml` (production overrides)
+- `infra/docker/compose.yml`
+- `infra/docker/compose.dev.yml` (development overrides)
+- `infra/docker/compose.monitoring.yml` (monitoring stack)
 
 #### 1.3 Configure Caddy
 **Priority:** HIGH  
@@ -161,14 +178,14 @@ tilt version
 
 **Configuration:**
 
-1. Create `Tiltfile` in project root
-2. Configure resource labels (core, infrastructure, observability)
-3. Set up resource dependencies
+1. `Tiltfile` already exists in project root (✅ implemented)
+2. Resource labels configured: core, infrastructure, observability
+3. Resource dependencies set up
 4. Test with `tilt up`
 
 **Deliverables:**
-- `Tiltfile` with all services defined
-- Working Tilt dashboard
+- ✅ `Tiltfile` with all services defined
+- ✅ Working Tilt dashboard
 - Documentation for team on Tilt usage
 
 **Benefits:**
@@ -326,11 +343,11 @@ cp .env.example .env.production
 nano .env.production  # Configure variables
 
 # Build and start services
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f infra/docker/compose.yml up -d --build
 
 # Verify deployment
-docker compose ps
-docker compose logs -f web
+docker compose -f infra/docker/compose.yml ps
+docker compose -f infra/docker/compose.yml logs -f frontend
 ```
 
 #### 3.5 Caddy Production Configuration
@@ -676,8 +693,8 @@ async def create_intake(request: Request):
 
 **Directory structure:**
 ```
-services/
-├── web/                    # Existing SvelteKit app
+apps/
+├── frontend/              # Existing SvelteKit app
 ├── contact/
 │   ├── src/
 │   │   ├── index.js       # Express server
@@ -725,7 +742,7 @@ services:
       - ACME_EMAIL=${ACME_EMAIL}
       - DOMAIN=${DOMAIN}
     volumes:
-      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge]
@@ -736,7 +753,7 @@ services:
       - email
 
   web:
-    build: ./services/web
+    build: ../../apps/frontend
     environment:
       - NODE_ENV=production
       - CONTACT_API_URL=http://contact:3001
@@ -745,7 +762,7 @@ services:
     networks: [edge]
 
   contact:
-    build: ./services/contact
+    build: ../../apps/contact
     environment:
       - NODE_ENV=production
       - EMAIL_API_URL=http://email:3002
@@ -910,15 +927,15 @@ automations.{$DOMAIN} {
 **Time:** 2-3 hours
 
 **Steps:**
-1. Create `docker-compose.monitoring.yml`
-2. Configure Prometheus to scrape Caddy
-3. Set up Grafana datasource provisioning
+1. ✅ `infra/docker/compose.monitoring.yml` already created
+2. ✅ Configure Prometheus to scrape Caddy
+3. ✅ Set up Grafana datasource provisioning
 4. Deploy with Tilt: `tilt up`
 
 **Configuration files:**
-- `infra/monitoring/prometheus/prometheus.yml`
-- `infra/monitoring/grafana/provisioning/datasources/prometheus.yml`
-- `infra/monitoring/grafana/provisioning/dashboards/dashboard-provider.yml`
+- ✅ `infra/monitoring/prometheus/prometheus.yml`
+- ✅ `infra/monitoring/grafana/provisioning/datasources/prometheus.yml`
+- ✅ `infra/monitoring/grafana/provisioning/dashboards/dashboard-provider.yml`
 
 **Verification:**
 - Access Grafana at `http://localhost:3001`
@@ -933,7 +950,7 @@ services:
     container_name: prometheus
     command: ['--config.file=/etc/prometheus/prometheus.yml']
     volumes:
-      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     networks: [observability]
     restart: unless-stopped
@@ -945,8 +962,8 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
-      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning
-      - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards
       - grafana_data:/var/lib/grafana
     ports: ["3001:3000"]
     networks: [observability]
@@ -963,9 +980,9 @@ volumes:
 ```
 
 **Deliverables:**
-- `docker-compose.monitoring.yml`
-- `infra/monitoring/prometheus/prometheus.yml`
-- Prometheus data volume
+- ✅ `infra/docker/compose.monitoring.yml`
+- ✅ `infra/monitoring/prometheus/prometheus.yml`
+- ✅ Prometheus data volume
 
 #### 8.2 Configure Dashboards
 **Priority:** MEDIUM  
@@ -1369,6 +1386,6 @@ For questions about this roadmap:
 ---
 
 **Document Version:** 2.0  
-**Last Review Date:** 2025-01-XX  
-**Next Review Date:** 2025-02-XX
+**Last Review Date:** 2025-12-14  
+**Next Review Date:** 2026-01-14
 

@@ -53,17 +53,26 @@ This directory contains all planning documents, architecture decisions, and oper
 
 | Document | Status | Last Updated | Version |
 |----------|--------|--------------|---------|
-| DEPLOYMENT_ROADMAP.md | ✅ Complete | 2025-10-04 | 1.0 |
-| QUICK_START_GUIDE.md | ✅ Complete | 2025-10-04 | 1.0 |
+| ARCHITECTURE.md | ✅ Updated | 2025-12-14 | 2.0 |
+| DEPLOYMENT_ROADMAP.md | ✅ Updated | 2025-12-14 | 2.0 |
+| QUICK_START_GUIDE.md | ✅ Updated | 2025-12-14 | 2.0 |
+| CONVENTIONS.md | ✅ Updated | 2025-12-14 | 2.0 |
+| WORKFLOWS.md | ✅ Updated | 2025-12-14 | 2.0 |
+| SECURITY_POLICY.md | ✅ Complete | 2025-10-04 | 1.0 |
+| AUTOMATIONS.md | ✅ Complete | 2025-10-04 | 1.0 |
+| API_DOCUMENTATION.md | ✅ Complete | 2025-10-04 | 1.0 |
 
 ---
 
 ## 🔄 Future Documents (To Be Added)
 
-- [ ] **ARCHITECTURE.md** - Technical architecture and design decisions
+- [x] **ARCHITECTURE.md** - Technical architecture and design decisions ✅
+- [x] **SECURITY_POLICY.md** - Security procedures and incident response ✅
+- [x] **CONVENTIONS.md** - Coding standards and naming conventions ✅
+- [x] **WORKFLOWS.md** - Development workflows and processes ✅
+- [x] **AUTOMATIONS.md** - n8n workflows and automation setup ✅
+- [x] **API_DOCUMENTATION.md** - API contracts and microservices specs ✅
 - [ ] **RUNBOOK.md** - Operational procedures and troubleshooting
-- [ ] **API_DOCUMENTATION.md** - API contracts and microservices specs
-- [ ] **SECURITY_POLICY.md** - Security procedures and incident response
 - [ ] **CHANGELOG.md** - Version history and updates
 - [ ] **CONTRIBUTING.md** - Development guidelines and standards
 
@@ -153,6 +162,6 @@ If you find issues with this documentation:
 
 ---
 
-**Last Updated:** 2025-10-04  
+**Last Updated:** 2025-12-14  
 **Maintained By:** Development Team
 

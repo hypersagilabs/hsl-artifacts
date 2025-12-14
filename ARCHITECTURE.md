@@ -1,8 +1,23 @@
 # System Architecture - Autonomous AI Agency
 
-**Version:** 1.0  
-**Last Updated:** 2025-10-04  
+**Version:** 2.0  
+**Last Updated:** 2025-12-14  
 **Project:** RoboAgency - Humachine AI Studio
+
+---
+
+## Changelog
+
+### Version 2.0 (2025-12-14)
+- Updated all file paths to reflect reorganized folder structure
+- Changed from `/apps/frontend_service/` to `/apps/frontend/`
+- Updated compose file references from `docker-compose.yml` to `infra/docker/compose.yml`
+- Fixed all volume mount paths in compose examples to use relative paths from `infra/docker/`
+- Updated Caddyfile volume paths to `../caddy/` instead of `./infra/caddy/`
+- Updated monitoring stack paths to use relative references
+
+### Version 1.0 (2025-10-04)
+- Initial architecture documentation
 
 ---
 
@@ -90,7 +105,7 @@ graph TD
 
 **Key Files:**
 ```
-/apps/frontend_service/
+/apps/frontend/
 ├── src/
 │   ├── routes/
 │   │   ├── intake/+page.svelte
@@ -471,25 +486,25 @@ flowchart LR
 ### Development Environment
 
 ```yaml
-# docker-compose.dev.yml
+# infra/docker/compose.dev.yml
 services:
   frontend:
-    build: ./apps/frontend_service
+    build: ../../apps/frontend
     volumes:
-      - ./apps/frontend_service:/app
+      - ../../apps/frontend:/app
     ports: ["3000:3000"]
   
   api:
-    build: ./apps/orchestrator_service
+    build: ../../apps/orchestrator_service
     volumes:
-      - ./apps/orchestrator_service:/app
+      - ../../apps/orchestrator_service:/app
     ports: ["5001:5001"]
 ```
 
 ### Production Environment
 
 ```yaml
-# docker-compose.yml
+# infra/docker/compose.yml
 services:
   caddy:
     image: caddy:2
@@ -501,7 +516,7 @@ services:
       - ACME_EMAIL=${ACME_EMAIL}
       - DOMAIN=${DOMAIN}
     volumes:
-      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge, observability]
@@ -512,7 +527,7 @@ services:
       - n8n
   
   frontend:
-    build: ./apps/frontend_service
+    build: ../../apps/frontend
     container_name: frontend
     environment:
       - NODE_ENV=production
@@ -695,6 +710,6 @@ GET /health
 ---
 
 **Document Version:** 2.0  
-**Last Review Date:** 2025-01-XX  
-**Next Review Date:** 2025-02-XX
+**Last Review Date:** 2025-12-14  
+**Next Review Date:** 2026-01-14
 
