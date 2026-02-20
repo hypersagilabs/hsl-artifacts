@@ -40,17 +40,51 @@ This roadmap outlines the complete deployment strategy for the HyperSagi Labs we
 - [x] Tailwind CSS v4 styling configured
 - [x] Basic pages: Home, About, Services, Industries, Contact
 - [x] Development environment setup (Node.js 20, npm)
+- [x] Docker containerization (Dockerfile, compose files)
+- [x] Caddy edge gateway configured with Cloudflare origin certificates
+- [x] Domain and DNS setup (hypersagi.com, agency.hypersagi.com)
+- [x] SSL/TLS working via Cloudflare Origin CA
+- [x] Tilt orchestration configured and running
+- [ ] Monitoring stack deployed (Prometheus + Grafana - deployed but not tested)
 
 ### ⏳ In Progress
-- [ ] Production build verification
-- [ ] Environment variables management
+- [ ] Email service configuration (SMTP not configured - contact form won't work)
+- [ ] Production server deployment (currently running via Tilt locally)
+- [ ] Monitoring stack testing (Prometheus + Grafana)
 
 ### ❌ Not Started
-- [ ] Docker containerization
-- [ ] Domain and DNS setup
-- [ ] Email service configuration
-- [ ] Production deployment
-- [ ] Monitoring and logging
+- [ ] Full production deployment to VPS
+- [ ] CI/CD pipeline setup
+
+---
+
+## Security Audit (Feb 2026)
+
+### ✅ Completed Fixes
+- [x] Added HSTS header (Strict-Transport-Security: max-age=31536000; includeSubDomains; preload)
+- [x] Added Content Security Policy (CSP)
+- [x] Fixed deprecated `servers { metrics }` Caddy syntax
+- [x] Removed public port exposure for frontend (3000) — internal only
+- [x] Removed Grafana port 3001 from public exposure — internal network only
+- [x] Grafana has admin auth via `GF_SECURITY_ADMIN_PASSWORD` env var
+- [x] Refactored env files: `infra/docker/.env` + `apps/.env` (no hardcoded secrets)
+- [x] Cloudflare proxy provides DDoS protection + WAF + rate limiting at edge
+- [x] Docker non-root user (nodejs:1001)
+- [x] Internal network segmentation (edge / observability networks)
+
+### 📋 Security Checklist Status (All Complete)
+- [x] HTTPS enforced (Cloudflare Origin CA + Full Strict mode)
+- [x] Security headers configured (HSTS, CSP, X-Frame-Options, etc.)
+- [x] Rate limiting (Cloudflare edge)
+- [x] Docker running as non-root user
+- [x] Internal network segmentation
+- [x] No secrets hardcoded in compose files
+- [x] Cert files gitignored
+- [x] UFW active: deny incoming, allow 22/80/443 only
+- [x] SSH hardened: PermitRootLogin no, PasswordAuthentication no
+- [x] fail2ban installed and running (SSH jail active)
+- [x] Grafana internal-only (port removed, auth via env var)
+- [x] Grafana strong password set in `infra/docker/.env.monitoring` (gitignored)
 
 ---
 
