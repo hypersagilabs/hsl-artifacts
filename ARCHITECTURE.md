@@ -12,7 +12,7 @@
 - Updated Caddy configuration to use Cloudflare Origin CA certificates (not Let's Encrypt)
 - Added verified security headers: HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
 - Updated DNS section: Cloudflare used as full proxy (not DNS-only)
-- Updated env configuration: `infra/docker/.env` and `apps/.env` (microservices pattern, no hardcoding)
+- Updated env configuration: single `infra/.env` for all infrastructure + `apps/.env` for frontend (no hardcoding)
 - Corrected container names: `frontend` (not `frontend_service`)
 - Frontend port 3000 is internal only (not published)
 - Monitoring compose file path: `infra/docker/compose.monitoring.yml`
@@ -553,7 +553,7 @@ services:
     image: caddy:2
     container_name: caddy
     env_file:
-      - .env                         # infra/docker/.env
+      - ../.env                      # infra/.env
     ports:
       - "80:80"
       - "443:443"
@@ -576,7 +576,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     env_file:
-      - ../../apps/.env              # apps/.env
+      - ../../apps/.env
     networks: [edge]
     restart: unless-stopped
 
@@ -637,8 +637,8 @@ volumes:
 
 **Env File Structure:**
 ```
-infra/docker/.env     # DOMAIN, ACME_EMAIL, PUBLIC_BASE_URL (loaded by caddy)
-apps/.env             # NODE_ENV, SMTP_*, PUBLIC_BASE_URL, CONTACT_EMAIL (loaded by frontend)
+infra/.env            # DOMAIN, ACME_EMAIL, POSTGRES_*, GF_* (all infrastructure services)
+apps/.env             # NODE_ENV, DATABASE_URL, SMTP_*, PUBLIC_BASE_URL, CONTACT_EMAIL (frontend)
 ```
 > Both files are gitignored. `.env.example` files serve as templates.
 
@@ -716,11 +716,15 @@ apps/.env             # NODE_ENV, SMTP_*, PUBLIC_BASE_URL, CONTACT_EMAIL (loaded
 ### Secrets Management
 
 ```bash
-# infra/docker/.env (never commit — gitignored)
+# infra/.env (never commit — gitignored)
 DOMAIN=hypersagi.com
 ACME_EMAIL=admin@hypersagi.com
+POSTGRES_USER=<secret>
+POSTGRES_PASSWORD=<secret>
+GF_SECURITY_ADMIN_PASSWORD=<secret>
 
 # apps/.env (never commit — gitignored)
+DATABASE_URL=<secret>
 SMTP_PASS=<secret>
 CONTACT_EMAIL=<secret>
 
