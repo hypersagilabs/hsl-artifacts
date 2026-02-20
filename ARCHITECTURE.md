@@ -1,12 +1,22 @@
 # System Architecture - Autonomous AI Agency
 
-**Version:** 2.0  
-**Last Updated:** 2025-12-14  
+**Version:** 2.1  
+**Last Updated:** 2026-02-20  
 **Project:** RoboAgency - Humachine AI Studio
 
 ---
 
 ## Changelog
+
+### Version 2.1 (2026-02-20)
+- Updated Caddy configuration to use Cloudflare Origin CA certificates (not Let's Encrypt)
+- Added verified security headers: HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- Updated DNS section: Cloudflare used as full proxy (not DNS-only)
+- Updated env configuration: `infra/docker/.env` and `apps/.env` (microservices pattern, no hardcoding)
+- Corrected container names: `frontend` (not `frontend_service`)
+- Frontend port 3000 is internal only (not published)
+- Monitoring compose file path: `infra/docker/compose.monitoring.yml`
+- Fixed Caddy global block: `metrics` (not deprecated `servers { metrics }`)
 
 ### Version 2.0 (2025-12-14)
 - Updated all file paths to reflect reorganized folder structure
@@ -93,8 +103,8 @@ graph TD
 
 **Purpose:** User-facing web application for client interaction and project intake.
 
-**Port:** 3000  
-**Container:** `frontend_service`
+**Port:** 3000 (internal only — not published, accessed via Caddy reverse proxy)  
+**Container:** `frontend`
 
 **Features:**
 - Sector selection interface
@@ -120,10 +130,17 @@ graph TD
 └── package.json
 ```
 
-**Environment Variables:**
+**Environment Variables** (loaded from `apps/.env` via `env_file`):
 ```bash
-PUBLIC_BASE_URL=https://agency.yourdomain.tld
-PUBLIC_API_URL=https://api.yourdomain.tld/v1
+PUBLIC_BASE_URL=https://agency.hypersagi.com
+PUBLIC_API_URL=https://api.hypersagi.com
+SMTP_HOST=
+SMTP_PORT=
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+CONTACT_EMAIL=
 ```
 
 ---
@@ -276,23 +293,43 @@ campaigns (id, project_id, emails_sent, created_at)
 
 **Purpose:** Edge gateway providing automatic HTTPS, host-based routing, and reverse proxy capabilities.
 
-**Host-Based Routing:**
-- `agency.yourdomain.tld` → SvelteKit frontend (port 3000)
-- `api.yourdomain.tld` → FastAPI orchestrator (port 5001)
-- `automations.yourdomain.tld` → n8n (port 5678, behind auth)
-- `grafana.yourdomain.tld` → Grafana (port 3000, behind auth, optional)
+**Host-Based Routing (active):**
+- `agency.hypersagi.com` → SvelteKit frontend (port 3000, internal)
+
+**Host-Based Routing (planned):**
+- `api.hypersagi.com` → FastAPI orchestrator (port 5001)
+- `automations.hypersagi.com` → n8n (port 5678, behind auth)
+- `grafana.hypersagi.com` → Grafana (behind basicauth)
 
 **Configuration:**
 ```caddyfile
 {
   email {$ACME_EMAIL}
+  metrics
   admin 0.0.0.0:2019
 }
 
 agency.{$DOMAIN} {
+  # Cloudflare Origin CA certificate
+  tls /etc/caddy/cert.pem /etc/caddy/key.pem
+
   encode gzip zstd
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; ..."
+    X-Frame-Options "SAMEORIGIN"
+    X-Content-Type-Options "nosniff"
+    X-XSS-Protection "1; mode=block"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  }
+
   reverse_proxy frontend:3000
 }
+
+
+# TODO Potentially??
 
 api.{$DOMAIN} {
   encode gzip zstd
@@ -306,25 +343,31 @@ automations.{$DOMAIN} {
 ```
 
 **Features:**
-- Automatic HTTPS via Let's Encrypt
+- SSL/TLS via Cloudflare Origin CA certificates (cert.pem + key.pem)
+- Cloudflare proxy in front (DDoS protection, WAF, CDN)
+- Full security header suite including HSTS + CSP
 - Built-in metrics endpoint (internal admin port 2019)
-- Security headers
 - Compression (gzip, zstd)
-- Rate limiting support
 
-#### 5.2 DNS (Optional - Cloudflare or Any Provider)
+#### 5.2 DNS / Cloudflare Proxy
 
-**Purpose:** DNS management only (optional).
+**Purpose:** DNS management + full proxy (DDoS, WAF, CDN).
 
-**Note:** Cloudflare can be used for DNS management only. SSL/TLS termination, WAF, and DDoS protection are handled by Caddy and server-level security (UFW, CrowdSec/fail2ban).
+**Mode:** Cloudflare proxy enabled (orange cloud). SSL mode: Full (Strict). Origin CA certificates used between Cloudflare and Caddy.
 
-**DNS Records Required:**
-- A records for subdomains: `agency`, `api`, `automations`, `grafana` (optional)
-- MX/SPF/DKIM/DMARC records remain unchanged (Google Workspace compatibility)
+**DNS Records (active):**
+- `A agency.hypersagi.com` → VPS IP (proxied)
+
+**DNS Records (planned):**
+- `A hypersagi.com` → VPS IP (proxied)
+- `A www.hypersagi.com` → VPS IP (proxied)
+- `A api.hypersagi.com` → VPS IP (proxied)
+
+**MX/SPF/DKIM/DMARC** records unchanged (Google Workspace compatibility)
 
 #### 5.3 Monitoring & Observability
 
-**Deployment:** Separate Docker Compose file (`docker-compose.monitoring.yml`)
+**Deployment:** Separate Docker Compose file (`infra/docker/compose.monitoring.yml`)
 
 **Prometheus Configuration:**
 - Scrapes Caddy metrics on internal port 2019
@@ -504,19 +547,20 @@ services:
 ### Production Environment
 
 ```yaml
-# infra/docker/compose.yml
+# infra/docker/compose.yml (active services only)
 services:
   caddy:
     image: caddy:2
     container_name: caddy
+    env_file:
+      - .env                         # infra/docker/.env
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      - ACME_EMAIL=${ACME_EMAIL}
-      - DOMAIN=${DOMAIN}
     volumes:
       - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../caddy/cert.pem:/etc/caddy/cert.pem:ro  # Cloudflare Origin CA
+      - ../caddy/key.pem:/etc/caddy/key.pem:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [edge, observability]
@@ -525,18 +569,17 @@ services:
       - frontend
       - orchestrator
       - n8n
-  
+
   frontend:
-    build: ../../apps/frontend
+    build:
+      context: ../../apps/frontend
+      dockerfile: Dockerfile
     container_name: frontend
-    environment:
-      - NODE_ENV=production
-      - PUBLIC_BASE_URL=https://agency.${DOMAIN}
-      - PUBLIC_API_URL=https://api.${DOMAIN}/v1
-    expose: ["3000"]
+    env_file:
+      - ../../apps/.env              # apps/.env
     networks: [edge]
     restart: unless-stopped
-  
+
   orchestrator:
     build: ./apps/orchestrator_service
     container_name: orchestrator
@@ -582,6 +625,8 @@ networks:
   edge:
   backend:
   observability:
+    name: hsl_observability
+    external: true
 
 volumes:
   caddy_data:
@@ -589,6 +634,13 @@ volumes:
   qdrant_data:
   n8n_data:
 ```
+
+**Env File Structure:**
+```
+infra/docker/.env     # DOMAIN, ACME_EMAIL, PUBLIC_BASE_URL (loaded by caddy)
+apps/.env             # NODE_ENV, SMTP_*, PUBLIC_BASE_URL, CONTACT_EMAIL (loaded by frontend)
+```
+> Both files are gitignored. `.env.example` files serve as templates.
 
 **Server Specifications (Minimum):**
 - **OS:** Ubuntu 22.04 LTS
@@ -664,13 +716,21 @@ volumes:
 ### Secrets Management
 
 ```bash
-# .env.production (never commit)
+# infra/docker/.env (never commit — gitignored)
+DOMAIN=hypersagi.com
+ACME_EMAIL=admin@hypersagi.com
+
+# apps/.env (never commit — gitignored)
+SMTP_PASS=<secret>
+CONTACT_EMAIL=<secret>
+
+# Future services
 SECRET_KEY=<generated>
 OPENAI_API_KEY=sk-...
 SUPABASE_SERVICE_KEY=<secret>
 ```
 
-**Storage:** Server-side only, environment variables.
+**Storage:** Server-side only, per-service `.env` files. Cert files (`infra/caddy/cert.pem`, `infra/caddy/key.pem`) are also gitignored.
 
 ---
 
@@ -709,7 +769,7 @@ GET /health
 
 ---
 
-**Document Version:** 2.0  
-**Last Review Date:** 2025-12-14  
-**Next Review Date:** 2026-01-14
+**Document Version:** 2.1  
+**Last Review Date:** 2026-02-20  
+**Next Review Date:** 2026-05-20
 
